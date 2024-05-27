@@ -12,12 +12,14 @@
               v-model="username"
               label="Username"
               outlined
+              @keyup.enter="login"
             ></v-text-field>
             <v-text-field
               v-model="password"
               label="Password"
               outlined
               type="password"
+              @keyup.enter="login"
             ></v-text-field>
             <v-btn @click="login">Login</v-btn>
             <v-btn @click="navigateTo('/register')">Registrar</v-btn>
@@ -28,6 +30,8 @@
   </v-container>
 </template>
 <script setup>
+import Cookies from 'js-cookie'
+
 const config = useRuntimeConfig()
 const error = ref(false)
 const success = ref(false)
@@ -46,9 +50,12 @@ async function login () {
       password: password.value
     })
   })
+  console.log(res)
   if (typeof res === 'object' && !res.error) {
+    Cookies.set('token', res.token)
     error.value = false
     errorHashVersion.value = false
+
   } else {
     error.value = true
   }
