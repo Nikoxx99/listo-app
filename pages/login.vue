@@ -30,9 +30,10 @@
   </v-container>
 </template>
 <script setup>
-import Cookies from 'js-cookie'
+definePageMeta({
+  middleware: 'already-auth'
+})
 
-const config = useRuntimeConfig()
 const error = ref(false)
 const success = ref(false)
 const errorHashVersion = ref(false)
@@ -50,12 +51,11 @@ async function login () {
       password: password.value
     })
   })
-  console.log(res)
   if (typeof res === 'object' && !res.error) {
-    Cookies.set('token', res.token)
     error.value = false
     errorHashVersion.value = false
-
+    success.value = true
+    navigateTo('/')
   } else {
     error.value = true
   }

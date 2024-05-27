@@ -1,7 +1,7 @@
 import { users } from "../db/schema";
 import { db } from "../mysql-service";
 import { eq } from "drizzle-orm";
-import jwt from 'jsonwebtoken'
+import * as jose from 'jose'
 import bcrypt from 'bcryptjs'
 const config = useRuntimeConfig()
 const pepper = config.pepper
@@ -13,14 +13,11 @@ export default defineEventHandler(async (event) => {
     .select()
     .from(users)
     .where(eq(users.username, body.username))
-    console.log(usersResp)
     if (Array.isArray(usersResp) && usersResp[0].username) {
       const valid = await verifyPassword(usersResp, body.password, pepper)
-      console.log(valid)
       if (valid) {
-        const user = { username: body.username };
-        const token = generateToken(user);
-        return { user: user, token: token}
+        const token = await generateToken();
+        return { token: token}
       } else {
         return {"error" : "User not found or password is incorrect."}
       }
@@ -44,8 +41,18 @@ async function verifyPassword(storedHash: Array<{ passHash: string | null }>, en
     return false;
   }
 }
-const secret = config.jwt_secret
+const secret = new TextEncoder().encode(
+  config.jwt_secret,
+)
+const alg = 'HS256'
 
-function generateToken(user: string | object) {
-    return jwt.sign(user, secret, { expiresIn: '7d' }); // Ajusta el tiempo de expiración según tus necesidades
+async function generateToken() {
+  const jwt = await new jose.SignJWT({ 'master:listoapp:sign': true })
+  .setProtectedHeader({ alg })
+  .setIssuedAt()
+  .setIssuer('master:listoapp')
+  .setAudience('listoapp:users')
+  .setExpirationTime('7d')
+  .sign(secret)
+  return jwt
 }
